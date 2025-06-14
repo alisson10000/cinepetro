@@ -1,9 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+import logging
+from fastapi.staticfiles import StaticFiles
+import os
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Routers (módulos da aplicação)
+
+
+
+# —— CONFIGURAÇÃO GLOBAL DO LOGGER ———————————————————————
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+)
+logger = logging.getLogger("cinepetro")
+logger.info("🚀 Iniciando a API CinePetro...")
+
+# —— IMPORTAÇÃO DOS ROUTERS DA APLICAÇÃO ——————————————————
 from app.modules.user.router import router as users_router
 from app.modules.auth.router import router as auth_router
 from app.modules.genres.router import router as genres_router
@@ -12,8 +25,7 @@ from app.modules.series.router import router as series_router
 from app.modules.episodes.router import router as episodes_router
 from app.modules.serie_genre.router import router as serie_genero_router
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Configuração da aplicação FastAPI
+# —— INSTÂNCIA DO APP FASTAPI ————————————————————————————————
 app = FastAPI(
     title="🎬 CinePetro API",
     version="1.0.0",
@@ -30,18 +42,16 @@ app = FastAPI(
     ]
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Middleware de CORS (libera acesso para frontend)
+# —— MIDDLEWARE DE CORS ——————————————————————————————————————
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção: definir domínio do frontend
+    allow_origins=["*"],  # Em produção, restrinja os domínios confiáveis
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Inclusão das rotas
+# —— INCLUSÃO DOS ROUTERS —————————————————————————————————————
 app.include_router(auth_router, tags=["Auth"])
 app.include_router(users_router, tags=["Users"])
 app.include_router(genres_router, tags=["Genres"])
@@ -50,18 +60,18 @@ app.include_router(series_router, tags=["Series"])
 app.include_router(episodes_router, tags=["Episodes"])
 app.include_router(serie_genero_router, tags=["SerieGenre"])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Health Check (rota raiz e rota dedicada)
+# —— ROTAS DE SAÚDE ————————————————————————————————————————————
 @app.get("/", tags=["Health"])
 def root():
+    logger.info("🔍 Acessando a rota raiz '/'")
     return {"msg": "🎬 CinePetro API is online!"}
 
 @app.get("/health", tags=["Health"])
 def health_check():
+    logger.info("📈 Health check realizado")
     return {"status": "ok", "message": "API CinePetro está no ar!"}
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Configuração do Swagger com suporte a JWT Bearer Token
+# —— PERSONALIZAÇÃO DO OPENAPI PARA JWT ————————————————————
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -89,3 +99,11 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
+logger.info("✅ CinePetro API carregada com sucesso.")
+# 📦 Servir arquivos estáticos (como pôsteres de filmes)
+app.mount(
+    "/static",
+    StaticFiles(directory=os.path.join("app", "static")),
+    name="static"
+)

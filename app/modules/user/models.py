@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
+
 from app.modules.core.database import Base
 
 class User(Base):
@@ -11,11 +12,12 @@ class User(Base):
     email = Column(String(150), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = Column(DateTime, nullable=True)
 
-    # Relacionamentos com Movie, Series e Episode
-    movies = relationship("Movie", back_populates="creator", cascade="all, delete-orphan")
-    series = relationship("Series", back_populates="creator", cascade="all, delete-orphan")
-    episodes = relationship("Episode", back_populates="creator", cascade="all, delete-orphan")
+    movies = relationship("Movie", back_populates="creator")  # backref para o relacionamento
+    series = relationship("Series", back_populates="creator")
+    episodes = relationship("Episode", back_populates="user")
+

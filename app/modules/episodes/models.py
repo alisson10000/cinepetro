@@ -20,6 +20,8 @@ class Episode(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = Column(DateTime, nullable=True)
+   
+    user = relationship("User", back_populates="episodes")
 
     series = relationship("Series", back_populates="episodes")
-    creator = relationship("User", back_populates="episodes")  # 👈 relacionamento com o criador
+    
