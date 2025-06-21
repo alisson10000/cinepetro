@@ -192,3 +192,15 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Vídeos (para evitar upload acidental de mídia pesada)
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.webm
+*.flv
+
+# Pasta de estáticos com mídia (exceto .gitkeep)
+static/*
+!static/.gitkeep
