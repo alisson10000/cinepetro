@@ -52,3 +52,4 @@ class Movie(Base):
 
     # Criador do filme (relacionamento reverso com User)
     creator = relationship("User", back_populates="movies")
+    watch_progress = relationship("WatchProgress", back_populates="movie", cascade="all, delete-orphan")

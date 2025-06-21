@@ -24,4 +24,5 @@ class Episode(Base):
     user = relationship("User", back_populates="episodes")
 
     series = relationship("Series", back_populates="episodes")
-    
+    watch_progress = relationship("WatchProgress", back_populates="episode", cascade="all, delete-orphan")
+

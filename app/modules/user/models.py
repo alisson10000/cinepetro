@@ -20,4 +20,5 @@ class User(Base):
     movies = relationship("Movie", back_populates="creator")  # backref para o relacionamento
     series = relationship("Series", back_populates="creator")
     episodes = relationship("Episode", back_populates="user")
+    watch_progress = relationship("WatchProgress", back_populates="user", cascade="all, delete-orphan")
 

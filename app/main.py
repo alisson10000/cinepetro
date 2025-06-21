@@ -5,9 +5,6 @@ import logging
 from fastapi.staticfiles import StaticFiles
 import os
 
-
-
-
 # —— CONFIGURAÇÃO GLOBAL DO LOGGER ———————————————————————
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +21,14 @@ from app.modules.movies.router import router as movies_router
 from app.modules.series.router import router as series_router
 from app.modules.episodes.router import router as episodes_router
 from app.modules.serie_genre.router import router as serie_genero_router
+from app.modules.WhatchProgress.router import router as watch_progress_router  # ✅ NOVO
+
+# —— GARANTIR QUE TODAS AS MODELS SEJAM REGISTRADAS ————————
+# Isso evita o erro de relacionamento não resolvido (WatchProgress)
+import app.modules.user.models
+import app.modules.movies.models
+import app.modules.episodes.models
+import app.modules.WhatchProgress.Models  # ✅ NOVO
 
 # —— INSTÂNCIA DO APP FASTAPI ————————————————————————————————
 app = FastAPI(
@@ -38,6 +43,7 @@ app = FastAPI(
         {"name": "Episodes", "description": "Cadastro e consulta de episódios"},
         {"name": "Genres", "description": "Gerenciamento de gêneros"},
         {"name": "SerieGenre", "description": "Associação entre séries e gêneros"},
+        {"name": "WatchProgress", "description": "Progresso de visualização de filmes e episódios"},  # ✅ NOVO
         {"name": "Health", "description": "Verificação de status da API"},
     ]
 )
@@ -59,6 +65,7 @@ app.include_router(movies_router, tags=["Movies"])
 app.include_router(series_router, tags=["Series"])
 app.include_router(episodes_router, tags=["Episodes"])
 app.include_router(serie_genero_router, tags=["SerieGenre"])
+app.include_router(watch_progress_router, tags=["WatchProgress"])  # ✅ NOVO
 
 # —— ROTAS DE SAÚDE ————————————————————————————————————————————
 @app.get("/", tags=["Health"])
@@ -101,9 +108,15 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 logger.info("✅ CinePetro API carregada com sucesso.")
+
 # 📦 Servir arquivos estáticos (como pôsteres de filmes)
 app.mount(
     "/static",
     StaticFiles(directory=os.path.join("app", "static")),
     name="static"
+)
+app.mount(
+    "/static/series",
+    StaticFiles(directory=os.path.join("app", "static", "series")),
+    name="series"
 )

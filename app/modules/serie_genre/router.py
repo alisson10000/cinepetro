@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.modules.core.database import get_db
 from app.modules.core.dependencies import get_current_user
@@ -13,8 +13,16 @@ def vincular_serie_genero(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    service.vincular_genero_a_serie(db, dados.serie_id, dados.genero_id)
-    return {"detail": "Gênero vinculado à série com sucesso."}
+    result = service.vincular_genero_a_serie(db, dados.serie_id, dados.genero_id)
+    
+    if "já está vinculado" in result["detail"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=result["detail"]
+        )
+
+    return result
+
 
 @router.delete("/", status_code=200)
 def desvincular_serie_genero(
@@ -22,5 +30,12 @@ def desvincular_serie_genero(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    service.desvincular_genero_de_serie(db, dados.serie_id, dados.genero_id)
-    return {"detail": "Gênero desvinculado da série com sucesso."}
+    result = service.desvincular_genero_de_serie(db, dados.serie_id, dados.genero_id)
+
+    if "não encontrada" in result["detail"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=result["detail"]
+        )
+
+    return result

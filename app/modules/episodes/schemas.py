@@ -1,24 +1,26 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 from typing import Optional
 from datetime import datetime
 
 class EpisodeBase(BaseModel):
-    title: str
+    title: constr(max_length=255)
     description: Optional[str] = None
     season_number: Optional[int] = None
     episode_number: Optional[int] = None
     duration: Optional[int] = None
     series_id: int
+    created_by: Optional[int] = None  # agora em conformidade com o banco
 
 class EpisodeCreate(EpisodeBase):
     pass
 
 class EpisodeUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[constr(max_length=255)] = None
     description: Optional[str] = None
     season_number: Optional[int] = None
     episode_number: Optional[int] = None
     duration: Optional[int] = None
+    # series_id e created_by geralmente não mudam após criação, mas pode adicionar se necessário
 
 class EpisodeOut(EpisodeBase):
     id: int
