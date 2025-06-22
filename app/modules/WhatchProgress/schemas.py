@@ -11,7 +11,7 @@ class WatchProgressBase(BaseModel):
 
 # Para criação de um novo progresso
 class WatchProgressCreate(WatchProgressBase):
-    user_id: int
+   
     movie_id: Optional[int] = None
     episode_id: Optional[int] = None
 
