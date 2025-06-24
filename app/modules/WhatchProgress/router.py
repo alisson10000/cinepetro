@@ -38,7 +38,6 @@ def save_progress(
         logger.error(f"❌ Erro ao salvar progresso: {e}")
         raise HTTPException(status_code=500, detail="Erro interno ao salvar progresso")
 
-
 # 🔍 Obter progresso de filme ou episódio
 @router.get("/get", response_model=schemas.WatchProgressOut)
 def get_progress(
@@ -66,3 +65,20 @@ def get_progress(
     except Exception as e:
         logger.error(f"❌ Erro ao buscar progresso: {e}")
         raise HTTPException(status_code=404, detail="Progresso não encontrado")
+
+# 🧠 Listar filmes parcialmente assistidos (para "Continuar Assistindo")
+@router.get("/continuar", response_model=list[schemas.MovieProgressOut])
+def continuar_assistindo(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    logger.info(f"📋 Solicitando lista de filmes parcialmente assistidos | user_id={current_user.id}")
+    try:
+        progresso = services.get_movies_to_continue(
+            db=db,
+            user_id=current_user.id
+        )
+        return progresso
+    except Exception as e:
+        logger.error(f"❌ Erro ao listar progresso: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao listar filmes para continuar assistindo")

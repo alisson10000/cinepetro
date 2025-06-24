@@ -1,11 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, APIRouter, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-import logging
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import logging
 import os
 
-# —— CONFIGURAÇÃO GLOBAL DO LOGGER ———————————————————————
+# 🚀 Logger
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
@@ -13,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger("cinepetro")
 logger.info("🚀 Iniciando a API CinePetro...")
 
-# —— IMPORTAÇÃO DOS ROUTERS DA APLICAÇÃO ——————————————————
+# 📦 Importação dos módulos da aplicação
 from app.modules.user.router import router as users_router
 from app.modules.auth.router import router as auth_router
 from app.modules.genres.router import router as genres_router
@@ -21,16 +22,15 @@ from app.modules.movies.router import router as movies_router
 from app.modules.series.router import router as series_router
 from app.modules.episodes.router import router as episodes_router
 from app.modules.serie_genre.router import router as serie_genero_router
-from app.modules.WhatchProgress.router import router as watch_progress_router  # ✅ NOVO
+from app.modules.WhatchProgress.router import router as watch_progress_router
 
-# —— GARANTIR QUE TODAS AS MODELS SEJAM REGISTRADAS ————————
-# Isso evita o erro de relacionamento não resolvido (WatchProgress)
+# 🔁 Importação dos modelos (garante que o SQLAlchemy registre)
 import app.modules.user.models
 import app.modules.movies.models
 import app.modules.episodes.models
-import app.modules.WhatchProgress.Models  # ✅ NOVO
+import app.modules.WhatchProgress.Models
 
-# —— INSTÂNCIA DO APP FASTAPI ————————————————————————————————
+# 🎬 Instância da API
 app = FastAPI(
     title="🎬 CinePetro API",
     version="1.0.0",
@@ -43,21 +43,21 @@ app = FastAPI(
         {"name": "Episodes", "description": "Cadastro e consulta de episódios"},
         {"name": "Genres", "description": "Gerenciamento de gêneros"},
         {"name": "SerieGenre", "description": "Associação entre séries e gêneros"},
-        {"name": "WatchProgress", "description": "Progresso de visualização de filmes e episódios"},  # ✅ NOVO
+        {"name": "WatchProgress", "description": "Progresso de visualização de filmes e episódios"},
         {"name": "Health", "description": "Verificação de status da API"},
     ]
 )
 
-# —— MIDDLEWARE DE CORS ——————————————————————————————————————
+# 🌐 CORS Totalmente Livre
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, restrinja os domínios confiáveis
+    allow_origins=["*"],  # 🔓 Livre para qualquer origem
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# —— INCLUSÃO DOS ROUTERS —————————————————————————————————————
+# 🔌 Inclusão dos routers
 app.include_router(auth_router, tags=["Auth"])
 app.include_router(users_router, tags=["Users"])
 app.include_router(genres_router, tags=["Genres"])
@@ -65,58 +65,71 @@ app.include_router(movies_router, tags=["Movies"])
 app.include_router(series_router, tags=["Series"])
 app.include_router(episodes_router, tags=["Episodes"])
 app.include_router(serie_genero_router, tags=["SerieGenre"])
-app.include_router(watch_progress_router, tags=["WatchProgress"])  # ✅ NOVO
+app.include_router(watch_progress_router, tags=["WatchProgress"])
 
-# —— ROTAS DE SAÚDE ————————————————————————————————————————————
+# ✅ Healthcheck
 @app.get("/", tags=["Health"])
 def root():
-    logger.info("🔍 Acessando a rota raiz '/'")
+    logger.info("🔍 Acessando '/'")
     return {"msg": "🎬 CinePetro API is online!"}
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    logger.info("📈 Health check realizado")
+    logger.info("📈 Health check OK")
     return {"status": "ok", "message": "API CinePetro está no ar!"}
 
-# —— PERSONALIZAÇÃO DO OPENAPI PARA JWT ————————————————————
+# 🔐 JWT no Swagger
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
 
-    openapi_schema = get_openapi(
+    schema = get_openapi(
         title=app.title,
         version=app.version,
         description=app.description,
         routes=app.routes,
     )
 
-    openapi_schema["components"]["securitySchemes"] = {
+    schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
             "scheme": "bearer",
-            "bearerFormat": "JWT",
+            "bearerFormat": "JWT"
         }
     }
 
-    for path in openapi_schema["paths"].values():
+    for path in schema["paths"].values():
         for operation in path.values():
             operation.setdefault("security", []).append({"BearerAuth": []})
 
-    app.openapi_schema = openapi_schema
+    app.openapi_schema = schema
     return app.openapi_schema
 
 app.openapi = custom_openapi
 
-logger.info("✅ CinePetro API carregada com sucesso.")
+# 📁 Diretório base para arquivos estáticos
+static_base = os.path.join("app", "static")
 
-# 📦 Servir arquivos estáticos (como pôsteres de filmes)
-app.mount(
-    "/static",
-    StaticFiles(directory=os.path.join("app", "static")),
-    name="static"
-)
-app.mount(
-    "/static/series",
-    StaticFiles(directory=os.path.join("app", "static", "series")),
-    name="series"
-)
+# 🎞️ Servir vídeos com CORS totalmente livre
+video_router = APIRouter()
+
+@video_router.get("/static/videos/{filename}", tags=["Movies"])
+async def serve_video_with_cors(filename: str, request: Request):
+    video_path = os.path.join(static_base, "videos", filename)
+
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Arquivo de vídeo não encontrado.")
+
+    response = FileResponse(video_path, media_type="video/mp4")
+    # 🔓 Libera acesso de qualquer origem
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    return response
+
+app.include_router(video_router)
+
+# 📁 Demais arquivos estáticos (sem CORS especial)
+app.mount("/static/series", StaticFiles(directory=os.path.join(static_base, "series")), name="series")
+app.mount("/static/subtitles", StaticFiles(directory=os.path.join(static_base, "subtitles")), name="subtitles")
+
+logger.info("✅ CinePetro API carregada com sucesso.")
