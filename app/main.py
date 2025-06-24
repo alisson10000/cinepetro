@@ -24,7 +24,7 @@ from app.modules.episodes.router import router as episodes_router
 from app.modules.serie_genre.router import router as serie_genero_router
 from app.modules.WhatchProgress.router import router as watch_progress_router
 
-# 🔁 Importação dos modelos (garante que o SQLAlchemy registre)
+# 🔁 Importação dos modelos
 import app.modules.user.models
 import app.modules.movies.models
 import app.modules.episodes.models
@@ -51,7 +51,7 @@ app = FastAPI(
 # 🌐 CORS Totalmente Livre
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 🔓 Livre para qualquer origem
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -121,7 +121,19 @@ async def serve_video_with_cors(filename: str, request: Request):
         raise HTTPException(status_code=404, detail="Arquivo de vídeo não encontrado.")
 
     response = FileResponse(video_path, media_type="video/mp4")
-    # 🔓 Libera acesso de qualquer origem
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    return response
+
+# 🎞️ Servir episódios organizados por série e temporada
+@video_router.get("/static/videos_series/{serie_id}/{season_number}/{episode_id}.mp4", tags=["Episodes"])
+async def serve_episode_video(serie_id: int, season_number: int, episode_id: int, request: Request):
+    episode_path = os.path.join(static_base, "videos_series", str(serie_id), str(season_number), f"{episode_id}.mp4")
+
+    if not os.path.exists(episode_path):
+        raise HTTPException(status_code=404, detail="Episódio não encontrado.")
+
+    response = FileResponse(episode_path, media_type="video/mp4")
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
     return response
@@ -131,5 +143,6 @@ app.include_router(video_router)
 # 📁 Demais arquivos estáticos (sem CORS especial)
 app.mount("/static/series", StaticFiles(directory=os.path.join(static_base, "series")), name="series")
 app.mount("/static/subtitles", StaticFiles(directory=os.path.join(static_base, "subtitles")), name="subtitles")
+app.mount("/static/posters", StaticFiles(directory=os.path.join(static_base, "posters")), name="posters")
 
 logger.info("✅ CinePetro API carregada com sucesso.")

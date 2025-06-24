@@ -45,3 +45,14 @@ def delete(db: Session, episode_id: int):
     db.delete(episode)
     db.commit()
     return True
+def get_next_episode(db: Session, series_id: int, season: int, current_episode: int):
+        return (
+            db.query(models.Episode)
+            .filter(
+                models.Episode.series_id == series_id,
+                models.Episode.season_number == season,
+                models.Episode.episode_number > current_episode
+            )
+            .order_by(models.Episode.episode_number.asc())
+            .first()
+    )

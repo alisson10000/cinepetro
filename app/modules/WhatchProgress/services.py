@@ -105,3 +105,4 @@ def get_movies_to_continue(db: Session, user_id: int) -> list[MovieProgressOut]:
 
     logger.info(f"📋 Filmes para continuar assistindo encontrados: {len(retorno)}")
     return retorno
+

@@ -55,3 +55,14 @@ def delete_episode(
     if not success:
         raise HTTPException(status_code=404, detail="🎬 Episódio não encontrado para exclusão")
     return {"detail": "🗑️ Episódio excluído com sucesso"}
+@router.get("/next", response_model=schemas.EpisodeOut)
+def get_next_episode(
+    series_id: int,
+    season: int,
+    current_episode: int,
+    db: Session = Depends(get_db)
+):
+    next_ep = services.get_next_episode(db, series_id, season, current_episode)
+    if not next_ep:
+        raise HTTPException(status_code=404, detail="🚫 Próximo episódio não encontrado")
+    return next_ep
